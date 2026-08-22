@@ -1,10 +1,10 @@
-// আপনার প্রদানকৃত নতুন Web App URL
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxuUfcicei74kNdvb9ddZ6lV_VBYdEu7WWorgHEctow4v1EIjpa2Y1FFOAXa-70uJBc/exec';
 
-const STORAGE_KEY='family_finance_transactions_v1';
+let isRegisterMode = false;
+let currentUser = null;
 let monthlyChart, expenseChart;
-const today=new Date().toISOString().split('T')[0];
-document.querySelectorAll('input[type="date"]').forEach(x=>x.value=today);
+const today = new Date().toISOString().split('T')[0];
+document.querySelectorAll('input[type="date"]').forEach(x => x.value = today); 
 
 // DOM Elements
 const totalIncomeEl = document.getElementById('totalIncome');
@@ -17,14 +17,83 @@ const allTransactionsEl = document.getElementById('allTransactions');
 const typeFilterEl = document.getElementById('typeFilter');
 const monthFilterEl = document.getElementById('monthFilter');
 const searchFilterEl = document.getElementById('searchFilter');
+const userInfoEl = document.getElementById('userInfo');
 
-function getData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch(e){return[]}}
-function saveData(data){localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
+// Multi-User Local Storage Handlers
+function getUsers(){ try { return JSON.parse(localStorage.getItem('ff_users')) || {}; } catch(e){ return {}; } }
+function saveUsers(users){ localStorage.setItem('ff_users', JSON.stringify(users)); }
+
+function getUserStorageKey(){ return currentUser ? 'ff_data_' + currentUser : null; }
+function getData(){
+  const key = getUserStorageKey();
+  if(!key) return [];
+  try { return JSON.parse(localStorage.getItem(key)) || []; } catch(e){ return []; }
+}
+function saveData(data){
+  const key = getUserStorageKey();
+  if(key) localStorage.setItem(key, JSON.stringify(data));
+}
+
+// Authentication Logic
+function toggleAuthMode(){
+  isRegisterMode = !isRegisterMode;
+  document.getElementById('authTitle').innerText = isRegisterMode ? '📝 নতুন অ্যাকাউন্ট তৈরি' : '🔑 লগইন করুন';
+  document.getElementById('authSub').innerText = isRegisterMode ? 'অ্যাকাউন্ট খুলতে ইমেইল ও পাসওয়ার্ড দিন' : 'আপনার ড্যাশবোর্ডে প্রবেশ করতে লগইন করুন';
+  document.getElementById('authSubmitBtn').innerText = isRegisterMode ? 'অ্যাকাউন্ট তৈরি করুন' : 'লগইন করুন';
+  document.getElementById('toggleText').innerText = isRegisterMode ? 'আগে থেকেই অ্যাকাউন্ট আছে?' : 'একাউন্ট নেই?';
+  document.getElementById('toggleBtn').innerText = isRegisterMode ? 'লগইন করুন' : 'নতুন অ্যাকাউন্ট তৈরি করুন';
+}
+
+function handleAuth(e){
+  e.preventDefault();
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
+  const pass = document.getElementById('authPassword').value;
+  const users = getUsers();
+
+  if(isRegisterMode){
+    if(users[email]) return alert('এই ইমেইল দিয়ে ইতোমধ্যে অ্যাকাউন্ট খোলা আছে!');
+    users[email] = { password: pass, createdAt: new Date().toISOString() };
+    saveUsers(users);
+    alert('অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! এখন লগইন করুন।');
+    toggleAuthMode();
+  } else {
+    if(!users[email] || users[email].password !== pass){
+      return alert('ভুল ইমেইল অথবা পাসওয়ার্ড দিয়েছেন!');
+    }
+    currentUser = email;
+    localStorage.setItem('ff_current_session', currentUser);
+    initUserSession();
+  }
+}
+
+function initUserSession(){
+  document.getElementById('authSection').style.display = 'none';
+  userInfoEl.innerHTML = `<i class="fa-solid fa-user"></i> ${currentUser}`;
+  renderDashboard();
+  fetchFromGoogleSheet();
+}
+
+function logoutUser(){
+  currentUser = null;
+  localStorage.removeItem('ff_current_session');
+  document.getElementById('authSection').style.display = 'flex';
+  document.getElementById('authForm').reset();
+}
+
+// Auto Session Check
+const savedSession = localStorage.getItem('ff_current_session');
+if(savedSession && getUsers()[savedSession]){
+  currentUser = savedSession;
+  initUserSession();
+} else {
+  document.getElementById('authSection').style.display = 'flex';
+}
+
 function money(n){return '৳ '+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:0,maximumFractionDigits:2})}
 function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 
-document.querySelectorAll('.nav button').forEach(btn=>btn.addEventListener('click',()=>{
- document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+document.querySelectorAll('.nav button[data-page]').forEach(btn=>btn.addEventListener('click',()=>{
+ document.querySelectorAll('.nav button[data-page]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(btn.dataset.page).classList.add('active');
  if(btn.dataset.page==='dashboard') renderDashboard();
  if(btn.dataset.page==='transactions') renderTransactions();
@@ -39,6 +108,7 @@ async function addTransaction(type,form,btnId){
  const fd=new FormData(form);
  const t={
    id:Date.now(),
+   user: currentUser,
    type,
    amount:Number(fd.get('amount')),
    category:fd.get('category').trim(),
@@ -58,9 +128,7 @@ async function addTransaction(type,form,btnId){
        headers: { 'Content-Type': 'application/json' },
        body: JSON.stringify(t)
      });
-   } catch(err) {
-     console.error("Google Sheet Sync Failed:", err);
-   }
+   } catch(err) { console.error("Google Sheet Sync Failed:", err); }
  }
 
  form.reset();form.querySelector('[name="date"]').value=today;
@@ -75,22 +143,15 @@ document.getElementById('incomeForm').addEventListener('submit',e=>{e.preventDef
 document.getElementById('expenseForm').addEventListener('submit',e=>{e.preventDefault();addTransaction('expense',e.target,'expenseBtn')});
 
 async function fetchFromGoogleSheet(){
- if(!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.trim() === ''){
-   alert("দয়া করে প্রথমে সঠিক Google Apps Script URL কোডে বসান।");
-   return;
- }
+ if(!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.trim() === '') return;
  try {
    const res = await fetch(GOOGLE_SCRIPT_URL);
    const data = await res.json();
    if(Array.isArray(data)){
-     saveData(data);
-     renderDashboard();
-    //  alert("গুগল শিট থেকে তথ্য সফলভাবে সিঙ্ক হয়েছে!");
+     const userOnlyData = data.filter(x => !x.user || x.user === currentUser);
+     if(userOnlyData.length) { saveData(userOnlyData); renderDashboard(); }
    }
- } catch(err) {
-   alert("গুগল শিট থেকে তথ্য আনতে সমস্যা হয়েছে। Apps Script-এ 'Who has access' অপশনটি 'Anyone' দেয়া আছে কি না নিশ্চিত করুন।");
-   console.error(err);
- }
+ } catch(err) { console.error(err); }
 }
 
 function renderDashboard(){
@@ -133,9 +194,5 @@ function renderTransactions(){
 
 function clearFilters(){typeFilterEl.value='all';monthFilterEl.value='';searchFilterEl.value='';renderTransactions()}
 function deleteOne(id){if(confirm('এই হিসাবটি মুছে ফেলতে চান?')){saveData(getData().filter(x=>x.id!==id));renderTransactions();renderDashboard()}}
-function deleteAllTransactions(){if(confirm('সতর্কতা: সব আয়-ব্যয়ের হিসাব স্থায়ীভাবে মুছে যাবে। আপনি নিশ্চিত?')){localStorage.removeItem(STORAGE_KEY);renderDashboard();alert('সব হিসাব মুছে ফেলা হয়েছে।')}}
-function downloadBackup(){const blob=new Blob([JSON.stringify(getData(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Family_Finance_Backup_'+today+'.json';a.click();URL.revokeObjectURL(a.href)}
-
-// অ্যাপ লোড করার সিকোয়েন্স
-renderDashboard();
-fetchFromGoogleSheet();
+function deleteAllTransactions(){if(confirm('সতর্কতা: আপনার সব হিসাব মুছে যাবে। আপনি কি নিশ্চিত?')){saveData([]);renderDashboard();alert('সব হিসাব মুছে ফেলা হয়েছে।')}}
+function downloadBackup(){const blob=new Blob([JSON.stringify(getData(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Finance_Backup_'+currentUser+'_'+today+'.json';a.click();URL.revokeObjectURL(a.href)}
