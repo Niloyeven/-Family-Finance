@@ -6,17 +6,40 @@
   <title>Family Finance - আয় ব্যয় হিসাব</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css">
+  <!--Font Awesome Link Here-->
+  <script src="https://kit.fontawesome.com/de3a74642f.js" crossorigin="anonymous"></script>
+
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+  <!-- Login/Register Modal -->
+  <div id="authSection" class="auth-container">
+    <div class="auth-box">
+      <h2>🔑 Family Finance Login</h2>
+      <p style="font-size: 13px; color: #666; margin-bottom: 15px;">আপনার নিজের ড্যাশবোর্ডে ঢুকতে ইমেইল ও পাসওয়ার্ড দিন</p>
+      <input type="email" id="authEmail" placeholder="ইমেইল দিন">
+      <input type="password" id="authPassword" placeholder="পাসওয়ার্ড দিন">
+      <div class="auth-buttons">
+        <button onclick="loginUser()" class="btn green">লগইন করুন</button>
+        <button onclick="registerUser()" class="btn">নতুন একাউন্ট খুলুন</button>
+      </div>
+    </div>
+  </div>
+
   <div class="app">
     <aside class="sidebar">
       <div class="logo">💰 Family Finance</div>
+      <div id="userInfo" class="user-info"></div>
       <div class="nav">
         <button class="active" data-page="dashboard">📊 ড্যাশবোর্ড</button>
         <button data-page="income">💵 আয় যোগ করুন</button>
         <button data-page="expense">💸 ব্যয় যোগ করুন</button>
         <button data-page="transactions">📋 সকল হিসাব</button>
         <button data-page="backup">💾 Backup / Sync</button>
+        <a target="_blank" class="sheet_button" href="https://docs.google.com/spreadsheets/d/1TwaU_yGGAywaUVoFlkfyaOOFVt0TIj6O37oeLceYbps/edit?gid=1446667757#gid=1446667757"><i style="color: green; font-size: 20px;" class="fa-solid fa-file-excel"></i>Google Sheet</a>
+        <button onclick="logoutUser()" class="btn red logout-btn"><i class="fa-solid fa-right-from-bracket"></i> লগআউট</button>
       </div>
     </aside>
 
@@ -83,13 +106,12 @@
       </section>
 
       <section id="backup" class="page">
-        <div class="topbar"><div><h1>💾 Google Sheet Sync & Backup</h1><div class="subtitle">আপনার গুগল শিট কানেকশন পরিচালনা করুন</div></div></div>
+        <div class="topbar"><div><h1>💾 Backup & Settings</h1><div class="subtitle">আপনার হিসাব সুরক্ষিত রাখুন</div></div></div>
         <div class="panel">
-          <div class="info">আপনার সকল হিসাব স্বয়ংক্রিয়ভাবে Google Sheet-এ সিঙ্ক হচ্ছে। প্রয়োজনে যেকোনো সময় পুনরায় শিট থেকে ডাটা রিফ্রেশ করতে পারেন।</div>
+          <div class="info">আপনার সকল হিসাব ক্লাউড ডাটাবেজে সম্পূর্ণ নিরাপদে সেভ হচ্ছে। আপনার ডাটা শুধুমাত্র আপনার একাউন্টেই দৃশ্যমান।</div>
           <div class="actions">
-            <button class="btn green" onclick="fetchFromGoogleSheet()">🔄 Google Sheet থেকে সিঙ্ক করুন</button>
             <button class="btn" onclick="downloadBackup()">⬇️ Backup Download (JSON)</button>
-            <button class="btn red" onclick="deleteAllTransactions()">🗑️ লোকাল ডাটা মুছে ফেলুন</button>
+            <button class="btn red" onclick="deleteAllTransactions()">🗑️ এই একাউন্টের সব ডাটা মুছে ফেলুন</button>
           </div>
         </div>
       </section>
