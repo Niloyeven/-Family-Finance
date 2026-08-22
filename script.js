@@ -4,7 +4,7 @@ const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxuUfcicei74k
 const STORAGE_KEY='family_finance_transactions_v1';
 let monthlyChart, expenseChart;
 const today=new Date().toISOString().split('T')[0];
-document.querySelectorAll('input[type="date"]').forEach(x=>x.value=today);
+document.querySelectorAll('input[type="date"]').forEach(x=>x.value=today); 
 
 // DOM Elements
 const totalIncomeEl = document.getElementById('totalIncome');
@@ -85,7 +85,7 @@ async function fetchFromGoogleSheet(){
    if(Array.isArray(data)){
      saveData(data);
      renderDashboard();
-     alert("গুগল শিট থেকে তথ্য সফলভাবে সিঙ্ক হয়েছে!");
+    //  alert("গুগল শিট থেকে তথ্য সফলভাবে সিঙ্ক হয়েছে!");
    }
  } catch(err) {
    alert("গুগল শিট থেকে তথ্য আনতে সমস্যা হয়েছে। Apps Script-এ 'Who has access' অপশনটি 'Anyone' দেয়া আছে কি না নিশ্চিত করুন।");
