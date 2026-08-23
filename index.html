@@ -1,98 +1,191 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="bn" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Family Finance - আয় ব্যয় হিসাব</title>
+  <title>Family Finance - এক্সক্লুসিভ আয় ব্যয় ড্যাশবোর্ড</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css">
-  <!--Font Awesome Link Here-->
   <script src="https://kit.fontawesome.com/de3a74642f.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app">
     <aside class="sidebar">
-      <div class="logo">💰 Family Finance</div>
-      <div class="nav">
-        <button class="active" data-page="dashboard">📊 ড্যাশবোর্ড</button>
-        <button data-page="income">💵 আয় যোগ করুন</button>
-        <button data-page="expense">💸 ব্যয় যোগ করুন</button>
-        <button data-page="transactions">📋 সকল হিসাব</button>
-        <button data-page="backup">💾 Backup / Sync</button>
-       <a target="_blank" class="sheet_button" href="https://docs.google.com/spreadsheets/d/1TwaU_yGGAywaUVoFlkfyaOOFVt0TIj6O37oeLceYbps/edit?gid=1446667757#gid=1446667757"><i style="color: green; font-size: 20px;" class="fa-solid fa-file-excel"></i>Google Sheet</a>
+      <div class="logo">
+        <div class="logo-icon"><i class="fa-solid fa-vault"></i></div>
+        <span>Finance Core</span>
+      </div>
+      <nav class="nav">
+        <button class="active" data-page="dashboard"><i class="fa-solid fa-chart-line"></i> ড্যাশবোর্ড</button>
+        <button data-page="income"><i class="fa-solid fa-circle-arrow-down"></i> আয় যোগ করুন</button>
+        <button data-page="expense"><i class="fa-solid fa-circle-arrow-up"></i> ব্যয় যোগ করুন</button>
+        <button data-page="transactions"><i class="fa-solid fa-receipt"></i> সকল হিসাব</button>
+        <button data-page="backup"><i class="fa-solid fa-arrows-rotate"></i> Sync & Backup</button>
+        <a target="_blank" class="sheet_button" href="https://docs.google.com/spreadsheets/d/1TwaU_yGGAywaUVoFlkfyaOOFVt0TIj6O37oeLceYbps/edit?gid=1446667757#gid=1446667757">
+          <i class="fa-solid fa-file-excel"></i> Google Sheet
+        </a>
+      </nav>
+      <div class="theme-toggle-container">
+        <button id="themeToggleBtn" class="theme-btn">
+          <i class="fa-solid fa-moon"></i> <span id="themeBtnText">নাইট মোড</span>
+        </button>
       </div>
     </aside>
 
     <main class="main">
       <section id="dashboard" class="page active">
-        <div class="topbar"><div><h1>📊 ড্যাশবোর্ড</h1><div class="subtitle">আপনার পরিবারের আয় ও ব্যয়ের সারসংক্ষেপ</div></div></div>
+        <!-- Dashboard Top Header -->
+        <div class="topbar">
+          <div>
+            <h1>📊 এনালিটিক্স ড্যাশবোর্ড</h1>
+            <div class="subtitle">আপনার সমস্ত আয়ের ও ব্যয়ের রিয়েল-টাইম ওভারভিউ</div>
+          </div>
+          <div class="user-badge" id="userInfo"><i class="fa-solid fa-shield-halved"></i> Guest Account</div>
+        </div>
+
+        <!-- Premium Glassmorphism Stats Cards -->
         <div class="cards">
-          <div class="card income"><div class="label">মোট আয়</div><div class="amount" id="totalIncome">৳ 0</div></div>
-          <div class="card expense"><div class="label">মোট ব্যয়</div><div class="amount" id="totalExpense">৳ 0</div></div>
-          <div class="card balance"><div class="label">বর্তমান ব্যালেন্স</div><div class="amount" id="balance">৳ 0</div></div>
-          <div class="card month"><div class="label">এই মাসের আয়</div><div class="amount" id="monthIncome">৳ 0</div></div>
-          <div class="card expense"><div class="label">এই মাসের ব্যয়</div><div class="amount" id="monthExpense">৳ 0</div></div>
+          <div class="card income">
+            <div class="card-icon"><i class="fa-solid fa-arrow-down-left"></i></div>
+            <div class="card-info">
+              <span class="label">মোট আয়</span>
+              <div class="amount" id="totalIncome">৳ 0</div>
+              <span class="card-tag positive"><i class="fa-solid fa-chart-line"></i> সর্বমোট সংগৃহীত</span>
+            </div>
+          </div>
+          <div class="card expense">
+            <div class="card-icon"><i class="fa-solid fa-arrow-up-right"></i></div>
+            <div class="card-info">
+              <span class="label">মোট ব্যয়</span>
+              <div class="amount" id="totalExpense">৳ 0</div>
+              <span class="card-tag negative"><i class="fa-solid fa-arrow-trend-down"></i> মোট খরচকৃত</span>
+            </div>
+          </div>
+          <div class="card balance">
+            <div class="card-icon"><i class="fa-solid fa-wallet"></i></div>
+            <div class="card-info">
+              <span class="label">বর্তমান ব্যালেন্স</span>
+              <div class="amount" id="balance">৳ 0</div>
+              <span class="card-tag neutral"><i class="fa-solid fa-building-columns"></i> অবশিষ্ট ফান্ড</span>
+            </div>
+          </div>
+          <div class="card month-inc">
+            <div class="card-icon"><i class="fa-solid fa-calendar-plus"></i></div>
+            <div class="card-info">
+              <span class="label">চলতি মাসের আয়</span>
+              <div class="amount" id="monthIncome">৳ 0</div>
+              <span class="card-tag positive">এই মাসের প্রাপ্তি</span>
+            </div>
+          </div>
+          <div class="card month-exp">
+            <div class="card-icon"><i class="fa-solid fa-calendar-minus"></i></div>
+            <div class="card-info">
+              <span class="label">চলতি মাসের ব্যয়</span>
+              <div class="amount" id="monthExpense">৳ 0</div>
+              <span class="card-tag negative">এই মাসের খরচ</span>
+            </div>
+          </div>
         </div>
+
+        <!-- Advanced Realistic Charts Grid -->
         <div class="grid2">
-          <div class="panel"><h2>📈 মাসভিত্তিক আয় ও ব্যয়</h2><canvas id="monthlyChart"></canvas></div>
-          <div class="panel"><h2>🥧 খাতভিত্তিক ব্যয়</h2><canvas id="expenseChart"></canvas></div>
+          <div class="panel chart-card">
+            <div class="panel-header">
+              <h2>📈 ট্রেন্ড অ্যানালিসিস (আয় বনাম ব্যয়)</h2>
+              <span class="badge-pill">১২ মাস</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="monthlyChart"></canvas>
+            </div>
+          </div>
+
+          <div class="panel chart-card">
+            <div class="panel-header">
+              <h2>🥧 খাতভিত্তিক ব্যয়ের ব্রেকডাউন</h2>
+              <span class="badge-pill">ক্যাটাগরি</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="expenseChart"></canvas>
+            </div>
+          </div>
         </div>
-        <div class="panel"><h2>🕒 সাম্প্রতিক ১০টি হিসাব</h2><div id="recentTransactions"></div></div>
+
+        <!-- Modern Transaction Table -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2>🕒 সাম্প্রতিক ১০টি ট্রানজ্যাকশন</h2>
+            <button class="btn-link" onclick="document.querySelector('[data-page=transactions]').click()">সবগুলো দেখুন &rarr;</button>
+          </div>
+          <div id="recentTransactions"></div>
+        </div>
       </section>
 
+      <!-- Income Section -->
       <section id="income" class="page">
-        <div class="topbar"><div><h1>💵 আয় যোগ করুন</h1><div class="subtitle">নতুন আয়ের তথ্য সংরক্ষণ করুন</div></div></div>
+        <div class="topbar">
+          <div><h1>💵 আয় রেকর্ড করুন</h1><div class="subtitle">নতুন আয়ের তথ্য সুরক্ষিত করুন</div></div>
+        </div>
         <div class="panel">
           <form id="incomeForm">
             <div class="form-grid">
-              <div><label>টাকার পরিমাণ *</label><input type="number" min="0" step="0.01" name="amount" required placeholder="যেমন: 50000"></div>
-              <div><label>আয়ের উদ্দেশ্য / খাত *</label><input name="category" required placeholder="যেমন: বেতন, ব্যবসা, ফ্রিল্যান্সিং"></div>
-              <div><label>আয়ের মাধ্যম</label><select name="method"><option value="Cash">Cash / নগদ</option><option value="Bank">Bank</option><option value="bKash">bKash</option><option value="Nagad">Nagad</option><option value="Rocket">Rocket</option><option value="Other">Other</option></select></div>
+              <div><label>টাকার পরিমাণ *</label><input type="number" min="0" step="0.01" name="amount" required placeholder="৳ ৫০,০০০"></div>
+              <div><label>আয়ের উদ্দেশ্য / খাত *</label><input name="category" required placeholder="যেমন: বেতন, ক্লায়েন্ট পেমেন্ট"></div>
+              <div><label>আয়ের মাধ্যম</label><select name="method"><option value="Cash">Cash / নগদ</option><option value="Bank">Bank Transfer</option><option value="bKash">bKash</option><option value="Nagad">Nagad</option><option value="Rocket">Rocket</option><option value="Other">Other</option></select></div>
               <div><label>তারিখ *</label><input type="date" name="date" required></div>
-              <div class="full"><label>নোট</label><textarea name="note" placeholder="অতিরিক্ত তথ্য লিখুন"></textarea></div>
+              <div class="full"><label>নোট</label><textarea name="note" placeholder="সংক্ষিপ্ত নোট লিখুন..."></textarea></div>
             </div>
             <div class="actions"><button class="btn green" type="submit" id="incomeBtn">💾 আয় সংরক্ষণ করুন</button><button class="btn gray" type="reset">Reset</button></div>
           </form>
         </div>
       </section>
 
+      <!-- Expense Section -->
       <section id="expense" class="page">
-        <div class="topbar"><div><h1>💸 ব্যয় যোগ করুন</h1><div class="subtitle">নতুন ব্যয়ের তথ্য সংরক্ষণ করুন</div></div></div>
+        <div class="topbar">
+          <div><h1>💸 ব্যয় রেকর্ড করুন</h1><div class="subtitle">নতুন ব্যয়ের এন্ট্রি পূরণ করুন</div></div>
+        </div>
         <div class="panel">
           <form id="expenseForm">
             <div class="form-grid">
-              <div><label>টাকার পরিমাণ *</label><input type="number" min="0" step="0.01" name="amount" required placeholder="যেমন: 12000"></div>
-              <div><label>ব্যয়ের উদ্দেশ্য / খাত *</label><input name="category" required placeholder="যেমন: বাজার, বাসা ভাড়া, চিকিৎসা"></div>
-              <div><label>পেমেন্ট মাধ্যম</label><select name="method"><option value="Cash">Cash / নগদ</option><option value="Bank">Bank</option><option value="bKash">bKash</option><option value="Nagad">Nagad</option><option value="Rocket">Rocket</option><option value="Other">Other</option></select></div>
+              <div><label>টাকার পরিমাণ *</label><input type="number" min="0" step="0.01" name="amount" required placeholder="৳ ১২,০০০"></div>
+              <div><label>ব্যয়ের উদ্দেশ্য / খাত *</label><input name="category" required placeholder="যেমন: বাসা ভাড়া, শপিং, ইলেকট্রিসিটি বিল"></div>
+              <div><label>পেমেন্ট মাধ্যম</label><select name="method"><option value="Cash">Cash / নগদ</option><option value="Bank">Bank Transfer</option><option value="bKash">bKash</option><option value="Nagad">Nagad</option><option value="Rocket">Rocket</option><option value="Other">Other</option></select></div>
               <div><label>তারিখ *</label><input type="date" name="date" required></div>
-              <div class="full"><label>নোট</label><textarea name="note" placeholder="অতিরিক্ত তথ্য লিখুন"></textarea></div>
+              <div class="full"><label>নোট</label><textarea name="note" placeholder="সংক্ষিপ্ত নোট লিখুন..."></textarea></div>
             </div>
             <div class="actions"><button class="btn red" type="submit" id="expenseBtn">💾 ব্যয় সংরক্ষণ করুন</button><button class="btn gray" type="reset">Reset</button></div>
           </form>
         </div>
       </section>
 
+      <!-- Transactions List -->
       <section id="transactions" class="page">
-        <div class="topbar"><div><h1>📋 সকল আয়-ব্যয়ের হিসাব</h1><div class="subtitle">Filter করে আপনার হিসাব দেখুন</div></div></div>
+        <div class="topbar">
+          <div><h1>📋 লেনদেনের বিস্তারিত ইতিহাস</h1><div class="subtitle">ফিল্টার এবং অনুসন্ধান করুন</div></div>
+        </div>
         <div class="panel">
           <div class="filter-row">
-            <select id="typeFilter"><option value="all">সব ধরনের হিসাব</option><option value="income">শুধু আয়</option><option value="expense">শুধু ব্যয়</option></select>
+            <select id="typeFilter"><option value="all">সকল লেনদেন</option><option value="income">শুধুমাত্র আয়</option><option value="expense">শুধুমাত্র ব্যয়</option></select>
             <input type="month" id="monthFilter">
-            <input type="text" id="searchFilter" placeholder="খাত/নোট খুঁজুন">
-            <button class="btn gray" onclick="clearFilters()">Filter Reset</button>
+            <input type="text" id="searchFilter" placeholder="🔍 খাত বা বিবরণ দিয়ে খুঁজুন...">
+            <button class="btn gray" onclick="clearFilters()">ফিল্টার রিসেট</button>
           </div>
           <div id="allTransactions"></div>
         </div>
       </section>
 
+      <!-- Backup Section -->
       <section id="backup" class="page">
-        <div class="topbar"><div><h1>💾 Google Sheet Sync & Backup</h1><div class="subtitle">আপনার গুগল শিট কানেকশন পরিচালনা করুন</div></div></div>
+        <div class="topbar">
+          <div><h1>💾 ক্লাউড ডাটা সিঙ্ক ও ব্যাকআপ</h1><div class="subtitle">আপনার ব্যাকআপ ফাইল সেভ অথবা লোড করুন</div></div>
+        </div>
         <div class="panel">
-          <div class="info">আপনার সকল হিসাব স্বয়ংক্রিয়ভাবে Google Sheet-এ সিঙ্ক হচ্ছে। প্রয়োজনে যেকোনো সময় পুনরায় শিট থেকে ডাটা রিফ্রেশ করতে পারেন।</div>
+          <div class="info"><i class="fa-solid fa-cloud-arrow-up"></i> আপনার প্রতিটি ডাটা সুরক্ষিত রাখতে Google Sheet ও JSON ব্যাকআপ অপশনটি ব্যবহার করুন।</div>
           <div class="actions">
-            <button class="btn green" onclick="fetchFromGoogleSheet()">🔄 Google Sheet থেকে সিঙ্ক করুন</button>
-            <button class="btn" onclick="downloadBackup()">⬇️ Backup Download (JSON)</button>
-            <button class="btn red" onclick="deleteAllTransactions()">🗑️ লোকাল ডাটা মুছে ফেলুন</button>
+            <button class="btn green" onclick="fetchFromGoogleSheet()"><i class="fa-solid fa-arrows-rotate"></i> Google Sheet থেকে তথ্য সিঙ্ক করুন</button>
+            <button class="btn" onclick="downloadBackup()"><i class="fa-solid fa-file-export"></i> JSON ব্যাকআপ ডাউনলোড করুন</button>
+            <button class="btn red" onclick="deleteAllTransactions()"><i class="fa-solid fa-trash-can"></i> লোকাল ডাটা পুরোপুরি মুছুন</button>
           </div>
         </div>
       </section>
