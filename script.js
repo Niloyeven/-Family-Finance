@@ -22,7 +22,7 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', nextTheme);
   localStorage.setItem('ff_theme', nextTheme);
   updateThemeUI(nextTheme);
-  renderDashboard(); // Re-render charts with correct color themes
+  renderDashboard();
 }
 
 function updateThemeUI(theme) {
@@ -41,7 +41,7 @@ function getUsers() {
     let users = JSON.parse(localStorage.getItem('ff_users'));
     if(!users) {
       users = {};
-      users[ADMIN_EMAIL] = { password: "123456", sheetUrl: "", createdAt: new Date().toISOString() };
+      users[ADMIN_EMAIL] = { password: "123456", sheetUrl: GOOGLE_SCRIPT_URL, createdAt: new Date().toISOString() };
       localStorage.setItem('ff_users', JSON.stringify(users));
     }
     return users; 
@@ -77,7 +77,7 @@ document.querySelectorAll('.nav button[data-page]').forEach(btn => btn.addEventL
   if(btn.dataset.page === 'transactions') renderTransactions();
 }));
 
-// Transaction Actions
+// Transaction Actions with Google Sheet Auto-Sync
 async function addTransaction(type, form, btnId) {
   const btn = document.getElementById(btnId);
   const originalText = btn.innerHTML;
@@ -97,21 +97,50 @@ async function addTransaction(type, form, btnId) {
     createdAt: new Date().toISOString()
   };
 
+  // 1. Save to LocalStorage
   const data = getData();
   data.push(t);
   saveData(data);
+
+  // 2. Sync to Google Sheet Apps Script
+  try {
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Avoid CORS block
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(t)
+    });
+  } catch(err) {
+    console.error("Google Sheet Sync Error: ", err);
+  }
 
   form.reset();
   form.querySelector('[name="date"]').value = today;
   btn.innerHTML = originalText;
   btn.disabled = false;
 
-  alert(type === 'income' ? 'আয় সফলভাবে রেকর্ড করা হয়েছে!' : 'ব্যয় সফলভাবে রেকর্ড করা হয়েছে!');
+  alert(type === 'income' ? 'আয় সফলভাবে রেকর্ড ও গুগল শিটে সিঙ্ক করা হয়েছে!' : 'ব্যয় সফলভাবে রেকর্ড ও গুগল শিটে সিঙ্ক করা হয়েছে!');
   renderDashboard();
 }
 
 document.getElementById('incomeForm').addEventListener('submit', e => { e.preventDefault(); addTransaction('income', e.target, 'incomeBtn'); });
 document.getElementById('expenseForm').addEventListener('submit', e => { e.preventDefault(); addTransaction('expense', e.target, 'expenseBtn'); });
+
+// Fetch Data from Google Sheet
+async function fetchFromGoogleSheet() {
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL);
+    const data = await res.json();
+    if(Array.isArray(data)) {
+      saveData(data); 
+      renderDashboard();
+      alert('গুগল শিট থেকে তথ্য সফলভাবে আপডেট হয়েছে!');
+    }
+  } catch(err) { 
+    console.error("Fetch Error:", err);
+    alert('গুগল শিট থেকে ডাটা আনবে ব্যর্থ হয়েছে। Apps Script অ্যাক্সেস চেক করুন।');
+  }
+}
 
 // Ultra Realistic Dynamic Charts Rendering
 function renderDashboard() {
@@ -146,7 +175,6 @@ function renderDashboard() {
   const incomes = labels.map(m => months[m].income);
   const expenses = labels.map(m => months[m].expense);
 
-  // Gradient Fills
   const incGradient = monthlyCtx.createLinearGradient(0, 0, 0, 300);
   incGradient.addColorStop(0, 'rgba(52, 211, 153, 0.4)');
   incGradient.addColorStop(1, 'rgba(52, 211, 153, 0.0)');
