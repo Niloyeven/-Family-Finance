@@ -75,6 +75,7 @@ document.querySelectorAll('.nav button[data-page]').forEach(btn => btn.addEventL
   document.getElementById(btn.dataset.page).classList.add('active');
   if(btn.dataset.page === 'dashboard') renderDashboard();
   if(btn.dataset.page === 'transactions') renderTransactions();
+  if(btn.dataset.page === 'budget-goals') renderBudgetsAndGoals();
 }));
 
 // Transaction Actions with Google Sheet Auto-Sync
@@ -101,6 +102,11 @@ async function addTransaction(type, form, btnId) {
   const data = getData();
   data.push(t);
   saveData(data);
+
+  // Check budget alert if type is expense
+  if(type === 'expense') {
+    checkBudgetExceeded(t.category, t.date);
+  }
 
   // 2. Sync to Google Sheet Apps Script
   try {
@@ -311,6 +317,184 @@ function downloadBackup() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'Finance_Backup_' + currentUser + '_' + today + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ----------------------------------------------------------------
+// NEW FEATURES: Budget, Savings Goal, and CSV Export Functions
+// ----------------------------------------------------------------
+
+function getBudgets() {
+  try { return JSON.parse(localStorage.getItem('ff_budgets_' + currentUser)) || {}; } catch(e){ return {}; }
+}
+function saveBudgets(data) {
+  localStorage.setItem('ff_budgets_' + currentUser, JSON.stringify(data));
+}
+
+function getGoals() {
+  try { return JSON.parse(localStorage.getItem('ff_goals_' + currentUser)) || []; } catch(e){ return []; }
+}
+function saveGoals(data) {
+  localStorage.setItem('ff_goals_' + currentUser, JSON.stringify(data));
+}
+
+// Save Budget
+document.getElementById('budgetForm')?.addEventListener('submit', e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const cat = fd.get('category').trim();
+  const amt = Number(fd.get('amount'));
+  
+  const budgets = getBudgets();
+  budgets[cat] = amt;
+  saveBudgets(budgets);
+  e.target.reset();
+  renderBudgetsAndGoals();
+  alert(`"${cat}" ক্যাটাগরির জন্য বাজেট সেভ হয়েছে!`);
+});
+
+// Delete Budget Limit
+function deleteBudget(cat) {
+  if(confirm(`আপনি কি "${cat}" ক্যাটাগরির বাজেট মুছে ফেলতে চান?`)) {
+    const budgets = getBudgets();
+    delete budgets[cat];
+    saveBudgets(budgets);
+    renderBudgetsAndGoals();
+  }
+}
+
+// Save Savings Goal
+document.getElementById('goalForm')?.addEventListener('submit', e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const goal = {
+    id: Date.now(),
+    title: fd.get('title').trim(),
+    target: Number(fd.get('target')),
+    saved: Number(fd.get('saved')) || 0
+  };
+  
+  const goals = getGoals();
+  goals.push(goal);
+  saveGoals(goals);
+  e.target.reset();
+  renderBudgetsAndGoals();
+  alert('নতুন সঞ্চয় লক্ষ্য সফলভাবে যোগ করা হয়েছে!');
+});
+
+// Delete Goal
+function deleteGoal(id) {
+  if(confirm('এই সঞ্চয় লক্ষ্যটি মুছে ফেলতে চান?')) {
+    const goals = getGoals().filter(g => g.id !== id);
+    saveGoals(goals);
+    renderBudgetsAndGoals();
+  }
+}
+
+// Check if expense exceeds budget limit
+function checkBudgetExceeded(cat, dateStr) {
+  const budgets = getBudgets();
+  if(!budgets[cat]) return;
+
+  const ym = dateStr.slice(0, 7);
+  const totalSpent = getData()
+    .filter(x => x.type === 'expense' && x.category.toLowerCase() === cat.toLowerCase() && x.date.startsWith(ym))
+    .reduce((s, x) => s + x.amount, 0);
+
+  if(totalSpent > budgets[cat]) {
+    setTimeout(() => {
+      alert(`⚠️ সতর্কবার্তা: চলতি মাসে "${cat}" খাতে আপনার নির্ধারিত বাজেট (${money(budgets[cat])}) অতিক্রম করেছে! বর্তমান মোট ব্যয়: ${money(totalSpent)}`);
+    }, 200);
+  }
+}
+
+// Render Budget & Savings Goals UI
+function renderBudgetsAndGoals() {
+  const d = getData(), now = new Date(), ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const budgets = getBudgets();
+  const goals = getGoals();
+  
+  // Calculate expenses per category for current month
+  const monthExp = {};
+  d.filter(x => x.type === 'expense' && x.date.startsWith(ym)).forEach(x => {
+    const key = x.category.trim();
+    monthExp[key] = (monthExp[key] || 0) + x.amount;
+  });
+
+  // Render Budgets Progress
+  let bHtml = '';
+  const cats = Object.keys(budgets);
+  if(!cats.length) {
+    bHtml = '<div class="empty">কোনো ক্যাটাগরি বাজেট যুক্ত করা হয়নি।</div>';
+  } else {
+    cats.forEach(c => {
+      const limit = budgets[c];
+      const spent = monthExp[c] || 0;
+      const pct = Math.min(Math.round((spent / limit) * 100), 100);
+      const isExceeded = spent > limit;
+      
+      bHtml += `
+        <div class="progress-card">
+          <div class="progress-header">
+            <span><b>${esc(c)}</b> ${isExceeded ? '<span class="badge ex">⚠️ বাজেট ছাড়িয়েছে</span>' : ''}</span>
+            <div>
+              <span>${money(spent)} / ${money(limit)}</span>
+              <button class="btn red small" style="margin-left: 8px;" onclick="deleteBudget('${esc(c)}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${isExceeded ? 'danger' : ''}" style="width: ${pct}%"></div>
+          </div>
+        </div>`;
+    });
+  }
+  const budgetListEl = document.getElementById('budgetList');
+  if(budgetListEl) budgetListEl.innerHTML = bHtml;
+
+  // Render Savings Goals
+  let gHtml = '';
+  if(!goals.length) {
+    gHtml = '<div class="empty">কোনো সঞ্চয় লক্ষ্য যোগ করা হয়নি।</div>';
+  } else {
+    goals.forEach(g => {
+      const pct = Math.min(Math.round((g.saved / g.target) * 100), 100);
+      gHtml += `
+        <div class="progress-card">
+          <div class="progress-header">
+            <span><b>🎯 ${esc(g.title)}</b></span>
+            <button class="btn red small" onclick="deleteGoal(${g.id})"><i class="fa-solid fa-trash"></i></button>
+          </div>
+          <div style="font-size: 13px; color: var(--text-muted); margin: 6px 0;">
+            জমা: ${money(g.saved)} / টার্গেট: ${money(g.target)} (${pct}%)
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill success" style="width: ${pct}%"></div>
+          </div>
+        </div>`;
+    });
+  }
+  const goalListEl = document.getElementById('goalList');
+  if(goalListEl) goalListEl.innerHTML = gHtml;
+}
+
+// Export Data to Excel/CSV
+function exportToCSV() {
+  const data = getData();
+  if (!data.length) {
+    alert('এক্সপোর্ট করার মতো কোনো লেনদেন পাওয়া যায়নি!');
+    return;
+  }
+  
+  let csvContent = "\uFEFFতারিখ,টাইপ,খাত/উদ্দেশ্য,মেথড,পরিমাণ,নোট\n";
+  data.forEach(x => {
+    csvContent += `"${x.date}","${x.type === 'income' ? 'আয়' : 'ব্যয়'}","${x.category}","${x.method}","${x.amount}","${x.note || ''}"\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Transaction_Report_${currentUser}_${today}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
